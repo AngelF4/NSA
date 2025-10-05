@@ -20,6 +20,7 @@ struct SloggHistogramChart: View {
             )
             .foregroundStyle(by: .value("Disposición", b.disposition))
         }
+        .chartTitle("Distribución de log g estelar por disposición")
         .chartLegend(.visible)
         .chartXAxisLabel("koi_slogg (bins)")
         .chartYAxisLabel("Conteo")
