@@ -10,7 +10,6 @@ import Combine
 
 class OnboardingViewModel: ObservableObject {
     @Published var isLoading: Bool = false
-    @AppStorage("showOnboarding") var showOnboarding: Bool = true
-    
-    
+    // Mostrar siempre el onboarding al iniciar la app (sin persistencia)
+    @Published var showOnboarding: Bool = true
 }
