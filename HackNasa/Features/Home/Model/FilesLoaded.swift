@@ -1,5 +1,5 @@
 //
-//  Folder.swift
+//  FilesLoaded.swift
 //  HackNasa
 //
 //  Created by Angel Hernández Gámez on 04/10/25.
@@ -7,12 +7,7 @@
 
 import Foundation
 
-struct Folder: Identifiable {
+struct FilesLoaded: Identifiable {
     let id = UUID()
-    
     let name: String
-    var isExpanded: Bool = true
-    
-    var Datasets: [Dataset] = []
-    
 }

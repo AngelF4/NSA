@@ -8,16 +8,15 @@
 import SwiftUI
 
 struct Home: View {
-    @State var selection: Panel? = nil
-    @State var viewModel = HomeViewModel()
+    @StateObject private var viewModel = HomeViewModel()
+    
     var body: some View {
         NavigationSplitView {
-            Sidebar(selection: $selection, homeViewModel: viewModel) 
+            Text("SideBar")
+        } content: {
+            Text("Content")
         } detail: {
-            DetailColumn(selection: $selection, viewModel: viewModel)
-        }
-        .onAppear {
-            selection = viewModel.firstSelection()
+            Text("detail")
         }
     }
 }

@@ -15,7 +15,7 @@ struct ContentView: View {
             OnboardingView()
                 .environmentObject(onboardingViewModel)
         } else {
-            Home()
+//            Home()
         }
     }
 }

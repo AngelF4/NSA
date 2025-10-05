@@ -1,5 +1,5 @@
 //
-//  Sidebar.swift
+//  ContentBar.swift
 //  HackNasa
 //
 //  Created by Angel Hernández Gámez on 04/10/25.
@@ -7,19 +7,19 @@
 
 import SwiftUI
 
-struct Sidebar: View {
+struct ContentBar: View {
     @ObservedObject var viewModel: HomeViewModel
-    @Binding var selection: UUID?
-    
     var body: some View {
-        List(viewModel.files, id: \.id,
-             selection: $viewModel.fileSelected) { file in
-            NavigationLink(value: file.id) {
-                Label(file.name, systemImage: "text.document")
+        List {
+            if let fileSelected = viewModel.fileSelected {
+                
+            } else {
+                ContentUnavailableView("Aún sin datos", systemImage: "globe.americas.fill", description:
+                        Text("Selecciona un archivo para mostrar los planetas")
+                )
             }
         }
-        .navigationTitle("Archivos")
-        .navigationBarTitleDisplayMode(.large)
+        .navigationTitle("Exoplanetas")
     }
 }
 
@@ -29,10 +29,8 @@ struct Sidebar: View {
     NavigationSplitView {
         Sidebar(viewModel: viewModel, selection: $selection)
     } content: {
-        
+        ContentBar(viewModel: viewModel)
     } detail: {
         
     }
-
 }
-
