@@ -11,12 +11,13 @@ struct ContentView: View {
     @StateObject private var onboardingViewModel  = OnboardingViewModel()
     
     var body: some View {
-        if onboardingViewModel.showOnboarding {
-            OnboardingView()
-                .environmentObject(onboardingViewModel)
-        } else {
-//            Home()
-        }
+        Home()
+//        if onboardingViewModel.showOnboarding {
+//            OnboardingView()
+//                .environmentObject(onboardingViewModel)
+//        } else {
+////            Home()
+//        }
     }
 }
 

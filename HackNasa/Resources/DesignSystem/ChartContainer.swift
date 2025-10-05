@@ -14,7 +14,6 @@ struct ChartContainer<Content: View>: View {
     var body: some View {
         VStack {
             content
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
         .padding(12)
         .background(Color(.systemBackground), in: .rect(cornerRadius: Radius.m))

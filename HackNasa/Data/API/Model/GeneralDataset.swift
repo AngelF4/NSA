@@ -14,14 +14,14 @@ struct GeneralDataset: Identifiable, Codable {
     var kepoiName: String
     var name: String //Este es el nombre que se muestra
 
-    var koiSteff: Double
+    var koiSteff: Double?
     var koiDisposition: String
-    var koiDuration: Double
-    var koiSrad: Double
-    var koiSlogg: Double
-    var koiModelSnr: Double
-    var koiDepth: Double
-    var koiPeriod: Double
+    var koiDuration: Double?
+    var koiSrad: Double?
+    var koiSlogg: Double?
+    var koiModelSnr: Double?
+    var koiDepth: Double?
+    var koiPeriod: Double?
 
     enum CodingKeys: String, CodingKey {
         case id = "kepid"
@@ -52,14 +52,14 @@ struct GeneralDataset: Identifiable, Codable {
         let providedName = try c.decodeIfPresent(String.self, forKey: .name)
         self.name = providedName ?? self.keplerName ?? self.kepoiName
 
-        self.koiSteff = try c.decode(Double.self, forKey: .koiSteff)
+        self.koiSteff = try c.decodeIfPresent(Double.self, forKey: .koiSteff)
         self.koiDisposition = try c.decode(String.self, forKey: .koiDisposition)
-        self.koiDuration = try c.decode(Double.self, forKey: .koiDuration)
-        self.koiSrad = try c.decode(Double.self, forKey: .koiSrad)
-        self.koiSlogg = try c.decode(Double.self, forKey: .koiSlogg)
-        self.koiModelSnr = try c.decode(Double.self, forKey: .koiModelSnr)
-        self.koiDepth = try c.decode(Double.self, forKey: .koiDepth)
-        self.koiPeriod = try c.decode(Double.self, forKey: .koiPeriod)
+        self.koiDuration = try c.decodeIfPresent(Double.self, forKey: .koiDuration)
+        self.koiSrad = try c.decodeIfPresent(Double.self, forKey: .koiSrad)
+        self.koiSlogg = try c.decodeIfPresent(Double.self, forKey: .koiSlogg)
+        self.koiModelSnr = try c.decodeIfPresent(Double.self, forKey: .koiModelSnr)
+        self.koiDepth = try c.decodeIfPresent(Double.self, forKey: .koiDepth)
+        self.koiPeriod = try c.decodeIfPresent(Double.self, forKey: .koiPeriod)
     }
 }
 

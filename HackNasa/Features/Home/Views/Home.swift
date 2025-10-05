@@ -9,14 +9,15 @@ import SwiftUI
 
 struct Home: View {
     @StateObject private var viewModel = HomeViewModel()
+    @StateObject private var geminiVM = GeminiViewModel()
     
     var body: some View {
         NavigationSplitView {
-            Text("SideBar")
+            Sidebar(viewModel: viewModel)
         } content: {
-            Text("Content")
+            ContentBar(viewModel: viewModel, geminiVM: geminiVM)
         } detail: {
-            Text("detail")
+            ProgressView("Cargando...")
         }
     }
 }

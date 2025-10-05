@@ -6,13 +6,30 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		84EF0F0B2E9251E900D86978 /* SwiftUIPager in Frameworks */ = {isa = PBXBuildFile; productRef = 84EF0F0A2E9251E900D86978 /* SwiftUIPager */; };
+/* End PBXBuildFile section */
+
 /* Begin PBXFileReference section */
 		8419630A2E91997A00AFDD2D /* HackNasa.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = HackNasa.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		84EF0E5F2E92362600D86978 /* Exceptions for "HackNasa" folder in "HackNasa" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = 841963092E91997A00AFDD2D /* HackNasa */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
+
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		8419630C2E91997A00AFDD2D /* HackNasa */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				84EF0E5F2E92362600D86978 /* Exceptions for "HackNasa" folder in "HackNasa" target */,
+			);
 			path = HackNasa;
 			sourceTree = "<group>";
 		};
@@ -23,6 +40,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				84EF0F0B2E9251E900D86978 /* SwiftUIPager in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -65,6 +83,7 @@
 			);
 			name = HackNasa;
 			packageProductDependencies = (
+				84EF0F0A2E9251E900D86978 /* SwiftUIPager */,
 			);
 			productName = HackNasa;
 			productReference = 8419630A2E91997A00AFDD2D /* HackNasa.app */;
@@ -94,6 +113,9 @@
 			);
 			mainGroup = 841963012E91997A00AFDD2D;
 			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				84EF0F092E9251E900D86978 /* XCRemoteSwiftPackageReference "SwiftUIPager" */,
+			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 8419630B2E91997A00AFDD2D /* Products */;
 			projectDirPath = "";
@@ -256,6 +278,7 @@
 				DEVELOPMENT_TEAM = 28QP46YWF4;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = HackNasa/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = Luxe;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
@@ -292,6 +315,7 @@
 				DEVELOPMENT_TEAM = 28QP46YWF4;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = HackNasa/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = Luxe;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
@@ -340,6 +364,25 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		84EF0F092E9251E900D86978 /* XCRemoteSwiftPackageReference "SwiftUIPager" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/fermoya/SwiftUIPager.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 2.5.0;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		84EF0F0A2E9251E900D86978 /* SwiftUIPager */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 84EF0F092E9251E900D86978 /* XCRemoteSwiftPackageReference "SwiftUIPager" */;
+			productName = SwiftUIPager;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = 841963022E91997A00AFDD2D /* Project object */;
 }

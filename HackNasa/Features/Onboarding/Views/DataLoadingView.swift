@@ -34,6 +34,8 @@ struct DataLoadingView: View {
     // Carga de archivo CSV (fase final)
     @State private var showImporter = false
     @State private var selectedFileURL: URL?
+    @State private var isUploading = false
+    @State private var uploadMessage: String?
     
     private var isFormValid: Bool {
         Double(numset) != nil && Double(maxDepth) != nil && Double(randomState) != nil
@@ -178,7 +180,9 @@ struct DataLoadingView: View {
             }
             
             Button {
-                submitHyperparameters()
+                Task {
+                    await submitHyperparameters()
+                }
             } label: {
                 Text("Subir hiperparámetros")
                     .frame(maxWidth: .infinity)
@@ -261,21 +265,82 @@ struct DataLoadingView: View {
             
             // Botón de ejecución (navegará a Home en el futuro)
             Button {
-                // TODO: logica de carga de csv
-                withAnimation {
-                    onboardingViewModel.showOnboarding = false
+                isUploading = true
+                Task {
+                    await uploadCSVAndSelect()
+                    isUploading = false
                 }
-                
             } label: {
-                Text("Ejecutar")
+                Text(isUploading ? "Subiendo..." : "Ejecutar")
                     .frame(maxWidth: .infinity)
             }
             .buttonStyle(.cta)
             .padding(.top, 4)
+            
+            if let msg = uploadMessage {
+                Text(msg)
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+            }
         }
     }
     
     // MARK: - Helpers
+    
+    // Sube el CSV en binario y luego selecciona ese CSV en el backend.
+    private func uploadCSVAndSelect() async {
+        guard let fileURL = selectedFileURL else {
+            await MainActor.run { uploadMessage = "Selecciona un archivo CSV primero." }
+            return
+        }
+        let filename = fileURL.lastPathComponent
+        // Cargar datos binarios del archivo
+        let data: Data
+        do {
+            data = try Data(contentsOf: fileURL)
+        } catch {
+            await MainActor.run { uploadMessage = "No se pudo leer el archivo: \(error.localizedDescription)" }
+            return
+        }
+        
+        // 1) Subir binario a /upload_raw con header X-File-Name
+        guard let uploadReq = APIEndpoint.uploadCSV(filename: filename).request(body: data) else {
+            await MainActor.run { uploadMessage = "No se pudo crear la petición de subida." }
+            return
+        }
+        do {
+            let (_, uploadResp) = try await URLSession.shared.data(for: uploadReq)
+            guard let http = uploadResp as? HTTPURLResponse, (200..<300).contains(http.statusCode) else {
+                await MainActor.run { uploadMessage = "Fallo al subir el CSV. Código inesperado." }
+                return
+            }
+        } catch {
+            await MainActor.run { uploadMessage = "Error de red al subir CSV: \(error.localizedDescription)" }
+            return
+        }
+        
+        // 2) Llamar a /csvs/select/{name}.csv con POST (name sin extensión)
+        let baseName = filename.hasSuffix(".csv") ? String(filename.dropLast(4)) : filename
+        guard let selectReq = APIEndpoint.selectCSV(name: baseName).request() else {
+            await MainActor.run { uploadMessage = "No se pudo crear la petición selectCSV." }
+            return
+        }
+        do {
+            let (_, selectResp) = try await URLSession.shared.data(for: selectReq)
+            guard let http = selectResp as? HTTPURLResponse, (200..<300).contains(http.statusCode) else {
+                await MainActor.run { uploadMessage = "Fallo al seleccionar el CSV. Código inesperado." }
+                return
+            }
+        } catch {
+            await MainActor.run { uploadMessage = "Error de red al seleccionar CSV: \(error.localizedDescription)" }
+            return
+        }
+        
+        await MainActor.run {
+            uploadMessage = "CSV subido y seleccionado."
+            onboardingViewModel.showOnboarding = false
+        }
+    }
     
     private func labeledNumericField(title: String, text: Binding<String>) -> some View {
         VStack(alignment: .leading, spacing: 6) {
@@ -314,16 +379,33 @@ struct DataLoadingView: View {
         text = sanitized
     }
     
-    private func submitHyperparameters() {
-        guard let n = Double(numset),
-              let m = Double(maxDepth),
-              let r = Double(randomState) else {
+    private func submitHyperparameters() async {
+        guard let n = Int(numset),
+              let m = Int(maxDepth),
+              let r = Int(randomState) else {
             return
         }
         // guardar para luego mandarlo al backend (UserDefaults a través de @AppStorage)
-        storedNumset = n
-        storedMaxDepth = m
-        storedRandomState = r
+        // 1) Arma el modelo
+        let hp = Hyperparams(numest: n, mxdepth: m, randstate: r)
+        
+        // 2) Codifica el JSON
+        guard let body = APIEndpoint.jsonBody(hp) else { fatalError("JSON inválido") }
+        
+        // 3) Crea el request (POST + Content-Type ya vienen por defecto)
+        guard let req = APIEndpoint.updateHyperparams.request(body: body) else { fatalError("URL inválida") }
+        
+        // 4) Llama al backend
+        do {
+            let (_, resp) = try await URLSession.shared.data(for: req)
+            guard let http = resp as? HTTPURLResponse, (200..<300).contains(http.statusCode) else {
+                print("No se completo la petición")
+                return
+            }
+        } catch {
+            print("No se completo la petición \(error)")
+        }
+        
         
         // Simular envío y carga de ~5 segundos
         withAnimation(.easeInOut) {

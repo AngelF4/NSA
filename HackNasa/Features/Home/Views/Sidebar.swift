@@ -9,7 +9,7 @@ import SwiftUI
 
 struct Sidebar: View {
     @ObservedObject var viewModel: HomeViewModel
-    @Binding var selection: UUID?
+    @State private var showNewFile = false
     
     var body: some View {
         List(viewModel.files, id: \.id,
@@ -18,21 +18,40 @@ struct Sidebar: View {
                 Label(file.name, systemImage: "text.document")
             }
         }
-        .navigationTitle("Archivos")
-        .navigationBarTitleDisplayMode(.large)
+             .toolbar {
+                 ToolbarItem(placement: .primaryAction) {
+                     Button("Agregar csv", systemImage: "plus") {
+                         showNewFile = true
+                     }
+                 }
+             }
+             .sheet(isPresented: $showNewFile) {
+                 
+             }
+             .onChange(of: viewModel.fileSelected) {
+                 guard viewModel.fileSelected != nil else { return }
+                 Task {
+                     await viewModel.selectCSV()
+                 }
+             }
+             .refreshable {
+                 await viewModel.fetchFiles()
+             }
+             .navigationTitle("Archivos")
+             .navigationBarTitleDisplayMode(.large)
     }
 }
 
 #Preview {
-    @Previewable @State var selection: UUID? = nil
     @Previewable @State var viewModel = HomeViewModel()
+    
     NavigationSplitView {
-        Sidebar(viewModel: viewModel, selection: $selection)
+        Sidebar(viewModel: viewModel)
     } content: {
         
     } detail: {
         
     }
-
+    
 }
 
