@@ -116,9 +116,22 @@ struct GeneralDetail: View {
                     Label("Preguntale a Gemini", systemImage: "sparkles")
                         .foregroundStyle(.secondary)
                 }
+                .background(
+                    AngularGradient(
+                        gradient: Gradient(colors: [.red, .orange, .yellow, .green, .cyan, .blue, .purple, .red]),
+                        center: .center
+                    )
+                    .mask(
+                        RoundedRectangle(cornerRadius: 12, style: .continuous)
+                            .stroke(lineWidth: 10)
+                            .blur(radius: 2)
+                    )
+                    .blur(radius: 7)
+                     // expande hacia afuera para que luzca como shadow
+                )
             }
             .buttonStyle(.plain)
-
+            
             // Tabla de datos para iPad
             Table(rows().sorted(using: sortOrder), selection: $tableSelection, sortOrder: $sortOrder) {
                 TableColumn("Nombre", value: \.name)

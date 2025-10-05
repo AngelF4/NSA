@@ -57,7 +57,7 @@ struct ContentBar: View {
             case .detail(let id):
                 if let item = viewModel.dataset?.first(where: { $0.id == id }) {
                      // tu vista de detalle
-                    DetailColumn()
+                    DetailColumn(generalDataset: item, geminiVM: geminiVM)
                 } else if viewModel.isLoading {
                     ProgressView()
                 } else {
