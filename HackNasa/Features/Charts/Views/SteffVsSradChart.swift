@@ -15,22 +15,18 @@ struct SteffVsSradChart: View {
     let points: [SteffVsSradPoint]
 
     var body: some View {
-        VStack(alignment: .leading, spacing: Spacing.s) {
-            Text("Relación entre temperatura efectiva y radio estelar")
-                .font(.headline)
-                .foregroundStyle(.secondary)
-            Chart(points) { p in
-                PointMark(
-                    x: .value("Teff (K)", p.steff),
-                    y: .value("Radio estelar (R☉)", p.srad)
-                )
-                .foregroundStyle(by: .value("Disposición", p.disposition))
-                .symbol(by: .value("Disposición", p.disposition))
-            }
-            .chartLegend(.visible)
-            .chartXAxisLabel("koi_steff")
-            .chartYAxisLabel("koi_srad")
+        Chart(points) { p in
+            PointMark(
+                x: .value("Teff (K)", p.steff),
+                y: .value("Radio estelar (R☉)", p.srad)
+            )
+            .foregroundStyle(by: .value("Disposición", p.disposition))
+            .symbol(by: .value("Disposición", p.disposition))
         }
+        .chartTitle("Relación entre temperatura efectiva y radio estelar")
+        .chartLegend(.visible)
+        .chartXAxisLabel("koi_steff")
+        .chartYAxisLabel("koi_srad")
     }
 }
 

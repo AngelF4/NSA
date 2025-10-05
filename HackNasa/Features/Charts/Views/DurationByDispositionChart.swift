@@ -16,23 +16,19 @@ struct DurationByDispositionChart: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: Spacing.s) {
-            Text("Duración \(statLabel) por disposición KOI")
-                .font(.headline)
-                .foregroundStyle(.secondary)
-            Chart(data) { row in
-                BarMark(
-                    x: .value("Disposición", row.disposition),
-                    y: .value("Duración (\(row.stat))", row.value)
-                )
-                .annotation(position: .top) {
-                    Text(row.value.formatted(.number.precision(.fractionLength(2))))
-                        .font(.caption2)
-                }
+        Chart(data) { row in
+            BarMark(
+                x: .value("Disposición", row.disposition),
+                y: .value("Duración (\(row.stat))", row.value)
+            )
+            .annotation(position: .top) {
+                Text(row.value.formatted(.number.precision(.fractionLength(2))))
+                    .font(.caption2)
             }
-            .chartLegend(.hidden)
-            .chartXAxisLabel("koi_disposition")
-            .chartYAxisLabel("koi_duration (\(data.first?.stat ?? "media"))")
         }
+        .chartTitle("Duración \(statLabel) por disposición KOI")
+        .chartLegend(.hidden)
+        .chartXAxisLabel("koi_disposition")
+        .chartYAxisLabel("koi_duration (\(data.first?.stat ?? "media"))")
     }
 }
