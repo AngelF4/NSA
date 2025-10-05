@@ -299,19 +299,26 @@ private struct SidebarUploadSheet: View {
             return
         }
 
-        guard let uploadReq = APIEndpoint.uploadCSV(filename: filename).request(body: data) else {
+        guard let uploadURL = URL(string: "http://18.188.234.218/upload_raw") else {
             await MainActor.run {
-                uploadMessage = "No se pudo crear la petición de subida."
+                uploadMessage = "URL de subida inválida."
                 isUploading = false
             }
             return
         }
 
+        var uploadReq = URLRequest(url: uploadURL)
+        uploadReq.httpMethod = "POST"
+        uploadReq.setValue(filename, forHTTPHeaderField: "X-Filename")
+        uploadReq.setValue("application/octet-stream", forHTTPHeaderField: "Content-Type")
+        uploadReq.httpBody = data
+
         do {
             let (_, uploadResp) = try await URLSession.shared.data(for: uploadReq)
             guard let http = uploadResp as? HTTPURLResponse, (200..<300).contains(http.statusCode) else {
+                let code = (uploadResp as? HTTPURLResponse)?.statusCode ?? 0
                 await MainActor.run {
-                    uploadMessage = "Fallo al subir el CSV."
+                    uploadMessage = "Fallo al subir el CSV. Código: \(code)"
                     isUploading = false
                 }
                 return
