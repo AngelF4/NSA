@@ -13,12 +13,20 @@ struct DepthHistogramChart: View {
     let bins: [DepthLogBin]
 
     var body: some View {
-        Chart(bins) { b in
-            BarMark(
-                x: .value("Bin log10(depth)", b.binLabel),
-                y: .value("Conteo", b.count)
-            )
-            .foregroundStyle(by: .value("Disposición", b.disposition))
+        VStack(alignment: .leading, spacing: Spacing.s) {
+            Text("Distribución logarítmica de profundidad por disposición")
+                .font(.headline)
+                .foregroundStyle(.secondary)
+            Chart(bins) { b in
+                BarMark(
+                    x: .value("Bin log10(depth)", b.binLabel),
+                    y: .value("Conteo", b.count)
+                )
+                .foregroundStyle(by: .value("Disposición", b.disposition))
+            }
+            .chartLegend(.visible)
+            .chartXAxisLabel("koi_depth (log10 bins)")
+            .chartYAxisLabel("Conteo")
         }
         .chartTitle("Distribución logarítmica de profundidad por disposición")
         .chartLegend(.visible)
