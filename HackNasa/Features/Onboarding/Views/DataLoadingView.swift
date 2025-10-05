@@ -1,5 +1,6 @@
 import SwiftUI
 import UniformTypeIdentifiers
+import Foundation
 
 struct DataLoadingView: View {
     // Fases del modal
@@ -46,9 +47,9 @@ struct DataLoadingView: View {
     ]
     
     // Formulario (entrada como texto, validación numérica)
-    @State private var numset: String = ""
-    @State private var maxDepth: String = ""
-    @State private var randomState: String = ""
+    @State private var numset: String = "100"
+    @State private var maxDepth: String = "100"
+    @State private var randomState: String = "42"
     
     // Persistencia (para usar más adelante) -> UserDefaults a través de @AppStorage
     @AppStorage("hp_numset") private var storedNumset: Double = 0
@@ -116,7 +117,9 @@ struct DataLoadingView: View {
                         .strokeBorder(Color.white.opacity(0.12))
                 )
             }
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
         }
+        .ignoresSafeArea()
     }
     
     // MARK: - Subviews
@@ -265,14 +268,30 @@ struct DataLoadingView: View {
             }
             .fileImporter(
                 isPresented: $showImporter,
-                allowedContentTypes: [.commaSeparatedText],
+                allowedContentTypes: {
+                    var types: [UTType] = [.commaSeparatedText]
+                    if let csvDyn = UTType(filenameExtension: "csv") { types.append(csvDyn) }
+                    return types
+                }(),
                 allowsMultipleSelection: false
             ) { result in
                 switch result {
                 case .success(let urls):
-                    selectedFileURL = urls.first
+                    guard let url = urls.first else {
+                        selectedFileURL = nil
+                        uploadMessage = "No se seleccionó archivo."
+                        return
+                    }
+                    if url.pathExtension.lowercased() == "csv" {
+                        selectedFileURL = url
+                        uploadMessage = nil
+                    } else {
+                        selectedFileURL = nil
+                        uploadMessage = "Selecciona un archivo con extensión .csv."
+                    }
                 case .failure:
                     selectedFileURL = nil
+                    uploadMessage = "No se seleccionó archivo."
                 }
             }
             
@@ -288,19 +307,34 @@ struct DataLoadingView: View {
             .font(.footnote)
             .foregroundStyle(.secondary)
             
-            // Botón de ejecución (navegará a Home en el futuro)
-            Button {
-                isUploading = true
-                Task {
-                    await uploadCSVAndSelect()
-                    isUploading = false
+            HStack {
+                Button {
+                    withAnimation {
+                        onboardingViewModel.showOnboarding = false
+                    }
+                } label: {
+                    VStack {
+                        Text("Omitir por ahora")
+                        Text("Solo si se tiene un archivo cargado")
+                            .font(.footnote)
+                            .foregroundStyle(.secondary)
+                    }
+                    .padding(.horizontal, 16)
                 }
-            } label: {
-                Text(isUploading ? "Subiendo..." : "Ejecutar")
-                    .frame(maxWidth: .infinity)
+                .buttonStyle(.plain)
+                Button {
+                    isUploading = true
+                    Task {
+                        await uploadCSVAndSelect()
+                        isUploading = false
+                    }
+                } label: {
+                    Text(isUploading ? "Subiendo..." : "Ejecutar")
+                        .frame(maxWidth: .infinity)
+                }
+                .buttonStyle(.cta)
+                .padding(.top, 4)
             }
-            .buttonStyle(.cta)
-            .padding(.top, 4)
             
             if let msg = uploadMessage {
                 Text(msg)
@@ -319,10 +353,27 @@ struct DataLoadingView: View {
             return
         }
         let filename = fileURL.lastPathComponent
-        // Cargar datos binarios del archivo
+        // Cargar datos binarios del archivo con acceso de seguridad y copia a sandbox
         let data: Data
+        
+        // Solicitar acceso de seguridad
+        let didStartAccessing = fileURL.startAccessingSecurityScopedResource()
+        defer {
+            if didStartAccessing { fileURL.stopAccessingSecurityScopedResource() }
+        }
+        
+        // Copiar al sandbox temporal
+        let sandboxURL: URL
         do {
-            data = try Data(contentsOf: fileURL)
+            sandboxURL = try copyToSandbox(from: fileURL)
+        } catch {
+            await MainActor.run { uploadMessage = "No se pudo copiar el archivo al sandbox: \(error.localizedDescription)" }
+            return
+        }
+        
+        // Leer datos desde el sandbox
+        do {
+            data = try Data(contentsOf: sandboxURL)
         } catch {
             await MainActor.run { uploadMessage = "No se pudo leer el archivo: \(error.localizedDescription)" }
             return
@@ -412,7 +463,23 @@ struct DataLoadingView: View {
         text = sanitized
     }
     
+    /// Copia un archivo externo al directorio temporal del app para evitar errores de permisos.
+    private func copyToSandbox(from externalURL: URL) throws -> URL {
+        let fm = FileManager.default
+        let tmpDir = fm.temporaryDirectory
+        let destURL = tmpDir.appendingPathComponent(externalURL.lastPathComponent)
+        if fm.fileExists(atPath: destURL.path) {
+            try fm.removeItem(at: destURL)
+        }
+        try fm.copyItem(at: externalURL, to: destURL)
+        return destURL
+    }
+    
     private func submitHyperparameters() async {
+        withAnimation {
+            phase = .loading
+        }
+        
         guard let n = Int(numset),
               let m = Int(maxDepth),
               let r = Int(randomState) else {
@@ -445,11 +512,8 @@ struct DataLoadingView: View {
         
         
         // Simular envío y carga de ~5 segundos
-        withAnimation(.easeInOut) {
-            phase = .loading
-        }
         Task {
-            try? await Task.sleep(nanoseconds: 4_000_000_000)
+            try? await Task.sleep(nanoseconds: 1_000_000_000)
             await MainActor.run {
                 withAnimation(.easeInOut) {
                     phase = .csvPrompt
