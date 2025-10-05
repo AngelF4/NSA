@@ -116,7 +116,9 @@ struct DataLoadingView: View {
                         .strokeBorder(Color.white.opacity(0.12))
                 )
             }
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
         }
+        .ignoresSafeArea() // <- importante: usa toda la pantalla (no solo la Safe Area)
     }
     
     // MARK: - Subviews
