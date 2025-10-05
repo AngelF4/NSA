@@ -14,7 +14,7 @@ struct Dataset: Identifiable {
     let data: Data
     let creationDate: Date = .now
     
-    let hiperparameters: hiperparameters
+//    let hiperparameters: hiperparameters
 }
 
 struct hiperparameters {

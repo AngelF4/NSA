@@ -58,9 +58,9 @@ struct Sidebar: View {
     @Previewable @State var viewModel = HomeViewModel()
     
     let datasets: [Dataset] = [
-        .init(title: "hola.csv", data: Data(), hiperparameters: hiperparameters(numberOfLayers: 5, maxDepth: 5, randomState: 5)),
-        .init(title: "adios.csv", data: Data(), hiperparameters: hiperparameters(numberOfLayers: 5, maxDepth: 5, randomState: 5)),
-        .init(title: "mundo.csv", data: Data(), hiperparameters: hiperparameters(numberOfLayers: 5, maxDepth: 5, randomState: 5)),
+        .init(title: "hola.csv", data: Data()),
+        .init(title: "adios.csv", data: Data()),
+        .init(title: "mundo.csv", data: Data()),
     ]
     NavigationSplitView {
         Sidebar(selection: $selection, homeViewModel: viewModel)

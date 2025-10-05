@@ -8,20 +8,41 @@
 import SwiftUI
 
 struct Bento: View {
+    let dataset: Dataset
+    
     var body: some View {
-        HStack {
-            VStack {
-                Text("Hola")
+        HStack(spacing: Spacing.l) {
+            VStack(spacing: Spacing.l) {
+                ChartContainer {
+                    Text("hooal")
+                }
+                ChartContainer {
+                    Text("hooal")
+                }
             }
-            .frame(maxWidth: .infinity)
-            VStack {
-                Text("Hola")
+            VStack(spacing: Spacing.l) {
+                ChartContainer {
+                    Text("hooal")
+                }
+                ChartContainer {
+                    Text("hooal")
+                }
+                ChartContainer {
+                    Text("hooal")
+                }
             }
-            .frame(maxWidth: .infinity)
-            VStack {
-                Text("Hola")
+            VStack(spacing: Spacing.l) {
+                ChartContainer {
+                    Text("hooal")
+                }
+                ChartContainer {
+                    Text("hooal")
+                }
+                ChartContainer {
+                    Text("hooal")
+                }
             }
-            .frame(maxWidth: .infinity)
+
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background {
@@ -43,5 +64,5 @@ struct Bento: View {
 }
 
 #Preview {
-    Bento()
+    Bento(dataset: Dataset(title: "", data: Data()))
 }
