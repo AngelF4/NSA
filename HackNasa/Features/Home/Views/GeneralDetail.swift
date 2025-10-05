@@ -109,8 +109,11 @@ struct GeneralDetail: View {
                     if geminiVM.isLoading {
                         ProgressView()
                     } else if let response = geminiVM.response {
-                        Text(response)
-                            .transition(.blurReplace)
+                        ScrollView {
+                            Text(response)
+                                .multilineTextAlignment(.leading)
+                                .transition(.blurReplace)
+                        }
                     }
                 } label: {
                     Label("Preguntale a Gemini", systemImage: "sparkles")
@@ -144,7 +147,6 @@ struct GeneralDetail: View {
                 TableColumn("Depth") { r in number(r.koiDepth, 3) }
                 TableColumn("Per. (d)") { r in number(r.koiPeriod, 3) }
             }
-            .frame(minHeight: 300)
         }
         .padding(20)
         .navigationTitle("Graficas Generales")

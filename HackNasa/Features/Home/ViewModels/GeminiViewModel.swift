@@ -29,6 +29,7 @@ class GeminiViewModel: ObservableObject {
             }
             let decoded = try JSONDecoder().decode(GeminiResponse.self, from: data)
             await MainActor.run { self.response = decoded.explanation }
+            isLoading = false
         } catch let DecodingError.dataCorrupted(ctx) {
             isLoading = false
             await MainActor.run { self.response = "JSON corrupto: \(ctx.debugDescription)" }
@@ -63,6 +64,7 @@ class GeminiViewModel: ObservableObject {
             }
             let decoded = try JSONDecoder().decode(GeminiResponse.self, from: data)
             await MainActor.run { self.response = decoded.explanation }
+            isLoading = false
         } catch {
             isLoading = false
             await MainActor.run { self.response = "Error: \(error.localizedDescription)" }

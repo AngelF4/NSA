@@ -54,10 +54,16 @@ struct ContentBar: View {
             case .general:
 //                GeneralView() // tu vista de resumen
                 GeneralDetail(viewModel: viewModel, geminiVM: geminiVM, position: .constant(nil))
+                    .onAppear {
+                        geminiVM.response = nil
+                    }
             case .detail(let id):
                 if let item = viewModel.dataset?.first(where: { $0.id == id }) {
                      // tu vista de detalle
                     DetailColumn(generalDataset: item, geminiVM: geminiVM)
+                        .onAppear {
+                            geminiVM.response = nil
+                        }
                 } else if viewModel.isLoading {
                     ProgressView()
                 } else {

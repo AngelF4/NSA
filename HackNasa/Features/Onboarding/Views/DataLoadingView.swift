@@ -313,6 +313,31 @@ struct DataLoadingView: View {
     
     // MARK: - Helpers
     
+    /// Construye un `multipart/form-data` para subir el CSV con el campo `file` (Flask: request.files["file"])
+    private func createUploadRequest(url: URL, csvData: Data, filename: String) -> URLRequest {
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        
+        // Límite para separar las partes del multipart
+        let boundary = "Boundary-\(UUID().uuidString)"
+        request.setValue("multipart/form-data; boundary=\(boundary)", forHTTPHeaderField: "Content-Type")
+        
+        var body = Data()
+        
+        // -- Parte del archivo
+        body.append("--\(boundary)\r\n".data(using: .utf8)!)
+        body.append("Content-Disposition: form-data; name=\"file\"; filename=\"\(filename)\"\r\n".data(using: .utf8)!)
+        body.append("Content-Type: text/csv\r\n\r\n".data(using: .utf8)!)
+        body.append(csvData)
+        body.append("\r\n".data(using: .utf8)!)
+        
+        // -- Cierre
+        body.append("--\(boundary)--\r\n".data(using: .utf8)!)
+        
+        request.httpBody = body
+        return request
+    }
+    
     // Sube el CSV en binario y luego selecciona ese CSV en el backend.
     private func uploadCSVAndSelect() async {
         guard let fileURL = selectedFileURL else {
@@ -329,11 +354,15 @@ struct DataLoadingView: View {
             return
         }
         
-        // 1) Subir binario a /upload_raw con header X-File-Name
-        guard let uploadReq = APIEndpoint.uploadCSV(filename: filename).request(body: data) else {
+        // 1) Subir CSV como multipart/form-data con campo `file`
+        guard let baseReq = APIEndpoint.uploadCSV(filename: filename).request(),
+              let uploadURL = baseReq.url else {
             await MainActor.run { uploadMessage = "No se pudo crear la petición de subida." }
             return
         }
+        
+        let uploadReq = createUploadRequest(url: uploadURL, csvData: data, filename: filename)
+        
         do {
             let (_, uploadResp) = try await URLSession.shared.data(for: uploadReq)
             guard let http = uploadResp as? HTTPURLResponse, (200..<300).contains(http.statusCode) else {
@@ -414,13 +443,13 @@ struct DataLoadingView: View {
         // guardar para luego mandarlo al backend (UserDefaults a través de @AppStorage)
         // 1) Arma el modelo
         let hp = Hyperparams(numest: n, mxdepth: m, randstate: r)
-
+        
         // 2) Codifica el JSON
         guard let body = APIEndpoint.jsonBody(hp) else { fatalError("JSON inválido") }
-
+        
         // 3) Crea el request (POST + Content-Type ya vienen por defecto)
         guard let req = APIEndpoint.updateHyperparams.request(body: body) else { fatalError("URL inválida") }
-
+        
         // 4) Llama al backend
         do {
             let (_, resp) = try await URLSession.shared.data(for: req)
@@ -431,12 +460,12 @@ struct DataLoadingView: View {
         } catch {
             print("No se completo la petición \(error)")
         }
-
+        
         storedNumset = Double(n)
         storedMaxDepth = Double(m)
         storedRandomState = Double(r)
-
-
+        
+        
         // Simular envío y carga de ~5 segundos
         withAnimation(.easeInOut) {
             phase = .loading

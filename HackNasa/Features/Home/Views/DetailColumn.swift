@@ -15,13 +15,14 @@ struct DetailColumn: View {
     var body: some View {
         VStack(spacing: Spacing.m) {
             ScrollView {
-                DatasetContainer {
+                DatasetContainer(background: .accent) {
                     Text("Disposition")
                         .font(.headline)
                     Text(generalDataset.koiDisposition)
                         .font(.title.bold())
+                        .frame(maxWidth: .infinity)
                 }
-                .frame(maxWidth: .infinity)
+                .foregroundStyle(.white)
                 
                 Button {
                     guard geminiVM.response == nil else { return }
@@ -55,16 +56,16 @@ struct DetailColumn: View {
                     )
                 }
                 .buttonStyle(.plain)
+                .padding()
                 
                 HStack(spacing: Spacing.m) {
                     VStack(spacing: Spacing.m) {
-                        DatasetContainer(background: .accent) {
+                        DatasetContainer {
                             Text("koiSteff")
                                 .font(.headline)
                             Text(generalDataset.koiSteff?.description ?? "")
                                 .font(.title.bold())
                         }
-                        .foregroundStyle(.white)
                         .frame(maxWidth: .infinity)
                         DatasetContainer {
                             Text("koiDuration")
@@ -110,10 +111,12 @@ struct DetailColumn: View {
                                 .font(.title.bold())
                         }
                         .frame(maxWidth: .infinity)
+                        Spacer()
                     }
                 }
             }
         }
+        .padding(20)
         .navigationTitle(generalDataset.name)
         .background {
             GeometryReader { geo in
