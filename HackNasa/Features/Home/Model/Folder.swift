@@ -11,6 +11,8 @@ struct Folder: Identifiable {
     let id = UUID()
     
     let name: String
+    var isExpanded: Bool = true
     
     var Datasets: [Dataset] = []
+    
 }

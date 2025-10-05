@@ -11,6 +11,23 @@ import SwiftUI
 struct PrimaryButtonStyle: ButtonStyle {
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
+            .font(.headline)
+            .foregroundStyle(.white)
+            .padding()
+            .frame(maxWidth: .infinity, minHeight: 50)
+            .background(Color.accentColor, in: .capsule)
+            .opacity(configuration.isPressed ? 0.6 : 1.0)
+    }
+}
+
+extension ButtonStyle where Self == PrimaryButtonStyle {
+    static var primary: PrimaryButtonStyle { PrimaryButtonStyle() }
+}
+
+#Preview {
+    Button("Hola") {
         
     }
+    .buttonStyle(.primary)
+    .padding()
 }
