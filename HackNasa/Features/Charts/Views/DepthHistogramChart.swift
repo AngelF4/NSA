@@ -20,7 +20,6 @@ struct DepthHistogramChart: View {
             )
             .foregroundStyle(by: .value("Disposición", b.disposition))
         }
-        .chartTitle("Distribución logarítmica de profundidad por disposición")
         .chartLegend(.visible)
         .chartXAxisLabel("koi_depth (log10 bins)")
         .chartYAxisLabel("Conteo")

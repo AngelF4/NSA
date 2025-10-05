@@ -83,7 +83,6 @@ struct StatsBarChart: View {
                         .font(.caption)
                 }
             }
-            .chartTitle(title)
             .chartYScale(domain: 0...1.05)
             .frame(height: 220)
         }
@@ -122,7 +121,6 @@ struct PerClassComparisonChart: View {
                         .font(.caption)
                 }
             }
-            .chartTitle("Comparación de métricas por clase")
             .chartYScale(domain: 0...1.05)
             .chartLegend(position: .bottom)
             .frame(height: 320)
@@ -180,7 +178,6 @@ struct CombinedComparisonChart: View {
                         .font(.caption)
                 }
             }
-            .chartTitle("Comparación de métricas agregadas y por clase")
             .chartYScale(domain: 0...1.05)
             .chartLegend(position: .bottom)
         }
