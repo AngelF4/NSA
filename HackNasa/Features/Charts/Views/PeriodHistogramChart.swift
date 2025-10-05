@@ -20,6 +20,7 @@ struct PeriodHistogramChart: View {
             )
             .foregroundStyle(by: .value("Disposición", b.disposition))
         }
+        .chartTitle("Distribución logarítmica del período orbital por disposición")
         .chartLegend(.visible)
         .chartXAxisLabel("koi_period (log10 bins)")
         .chartYAxisLabel("Conteo")

@@ -23,6 +23,7 @@ struct SteffVsSradChart: View {
             .foregroundStyle(by: .value("Disposición", p.disposition))
             .symbol(by: .value("Disposición", p.disposition))
         }
+        .chartTitle("Relación entre temperatura efectiva y radio estelar")
         .chartLegend(.visible)
         .chartXAxisLabel("koi_steff")
         .chartYAxisLabel("koi_srad")
