@@ -74,7 +74,7 @@ struct ContentBar: View {
     NavigationSplitView {
         Sidebar(viewModel: viewModel)
     } content: {
-        ContentBar(viewModel: viewModel)
+        ContentBar(viewModel: viewModel, geminiVM: GeminiViewModel())
     } detail: {
         Text("Detalle")
             .foregroundStyle(.secondary)

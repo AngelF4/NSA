@@ -99,18 +99,25 @@ struct GeneralDetail: View {
                     if items.indices.contains(idx) { position = items[idx].id }
                 }
             }
-            GroupBox {
-                if let response = geminiVM.response {
-                    Text(response)
-                }
-            } label: {
-                Label("Preguntale a Gemini", systemImage: "sparkles")
-            }
-            .onTapGesture {
+            Button {
+                guard geminiVM.response == nil else { return }
                 Task {
                     await geminiVM.askGeneral()
                 }
+            } label: {
+                GroupBox {
+                    if geminiVM.isLoading {
+                        ProgressView()
+                    } else if let response = geminiVM.response {
+                        Text(response)
+                            .transition(.blurReplace)
+                    }
+                } label: {
+                    Label("Preguntale a Gemini", systemImage: "sparkles")
+                        .foregroundStyle(.secondary)
+                }
             }
+            .buttonStyle(.plain)
 
             // Tabla de datos para iPad
             Table(rows().sorted(using: sortOrder), selection: $tableSelection, sortOrder: $sortOrder) {
@@ -166,5 +173,5 @@ struct GeneralDetail: View {
 }
 
 #Preview {
-    GeneralDetail(viewModel: HomeViewModel(), position: .constant(nil))
+    GeneralDetail(viewModel: HomeViewModel(), geminiVM: GeminiViewModel(), position: .constant(nil))
 }
