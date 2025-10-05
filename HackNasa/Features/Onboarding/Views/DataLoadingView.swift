@@ -164,8 +164,7 @@ struct DataLoadingView: View {
                         .font(.headline)
                         .frame(maxWidth: .infinity, minHeight: 56)
                         .padding(.vertical, 0)
-                        .foregroundStyle(.black)
-                        .background(Color.white)
+                        .foregroundStyle(.white)
                         .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
                 }
                 .opacity(currentStep == 0 ? 0.6 : 1)
