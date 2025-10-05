@@ -1,5 +1,6 @@
 import SwiftUI
 import UniformTypeIdentifiers
+import Foundation
 
 struct DataLoadingView: View {
     // Fases del modal
@@ -265,14 +266,30 @@ struct DataLoadingView: View {
             }
             .fileImporter(
                 isPresented: $showImporter,
-                allowedContentTypes: [.commaSeparatedText],
+                allowedContentTypes: {
+                    var types: [UTType] = [.commaSeparatedText]
+                    if let csvDyn = UTType(filenameExtension: "csv") { types.append(csvDyn) }
+                    return types
+                }(),
                 allowsMultipleSelection: false
             ) { result in
                 switch result {
                 case .success(let urls):
-                    selectedFileURL = urls.first
+                    guard let url = urls.first else {
+                        selectedFileURL = nil
+                        uploadMessage = "No se seleccionó archivo."
+                        return
+                    }
+                    if url.pathExtension.lowercased() == "csv" {
+                        selectedFileURL = url
+                        uploadMessage = nil
+                    } else {
+                        selectedFileURL = nil
+                        uploadMessage = "Selecciona un archivo con extensión .csv."
+                    }
                 case .failure:
                     selectedFileURL = nil
+                    uploadMessage = "No se seleccionó archivo."
                 }
             }
             
@@ -319,10 +336,27 @@ struct DataLoadingView: View {
             return
         }
         let filename = fileURL.lastPathComponent
-        // Cargar datos binarios del archivo
+        // Cargar datos binarios del archivo con acceso de seguridad y copia a sandbox
         let data: Data
+        
+        // Solicitar acceso de seguridad
+        let didStartAccessing = fileURL.startAccessingSecurityScopedResource()
+        defer {
+            if didStartAccessing { fileURL.stopAccessingSecurityScopedResource() }
+        }
+        
+        // Copiar al sandbox temporal
+        let sandboxURL: URL
         do {
-            data = try Data(contentsOf: fileURL)
+            sandboxURL = try copyToSandbox(from: fileURL)
+        } catch {
+            await MainActor.run { uploadMessage = "No se pudo copiar el archivo al sandbox: \(error.localizedDescription)" }
+            return
+        }
+        
+        // Leer datos desde el sandbox
+        do {
+            data = try Data(contentsOf: sandboxURL)
         } catch {
             await MainActor.run { uploadMessage = "No se pudo leer el archivo: \(error.localizedDescription)" }
             return
@@ -410,6 +444,18 @@ struct DataLoadingView: View {
             sanitized.append(ch)
         }
         text = sanitized
+    }
+    
+    /// Copia un archivo externo al directorio temporal del app para evitar errores de permisos.
+    private func copyToSandbox(from externalURL: URL) throws -> URL {
+        let fm = FileManager.default
+        let tmpDir = fm.temporaryDirectory
+        let destURL = tmpDir.appendingPathComponent(externalURL.lastPathComponent)
+        if fm.fileExists(atPath: destURL.path) {
+            try fm.removeItem(at: destURL)
+        }
+        try fm.copyItem(at: externalURL, to: destURL)
+        return destURL
     }
     
     private func submitHyperparameters() async {
