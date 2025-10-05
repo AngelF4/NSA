@@ -13,15 +13,20 @@ struct SteffHistogramChart: View {
     let bins: [SteffBin]
 
     var body: some View {
-        Chart(bins) { b in
-            BarMark(
-                x: .value("Bin Teff (K)", b.binLabel),
-                y: .value("Conteo", b.count)
-            )
-            .foregroundStyle(by: .value("Disposición", b.disposition))
+        VStack(alignment: .leading, spacing: Spacing.s) {
+            Text("Distribución de temperatura efectiva por disposición")
+                .font(.headline)
+                .foregroundStyle(.secondary)
+            Chart(bins) { b in
+                BarMark(
+                    x: .value("Bin Teff (K)", b.binLabel),
+                    y: .value("Conteo", b.count)
+                )
+                .foregroundStyle(by: .value("Disposición", b.disposition))
+            }
+            .chartLegend(.visible)
+            .chartXAxisLabel("koi_steff (bins)")
+            .chartYAxisLabel("Conteo")
         }
-        .chartLegend(.visible)
-        .chartXAxisLabel("koi_steff (bins)")
-        .chartYAxisLabel("Conteo")
     }
 }
