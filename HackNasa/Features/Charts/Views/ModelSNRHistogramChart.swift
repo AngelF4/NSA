@@ -20,7 +20,6 @@ struct ModelSNRHistogramChart: View {
             )
             .foregroundStyle(by: .value("Disposición", b.disposition))
         }
-        .chartTitle("Distribución logarítmica de SNR del modelo por disposición")
         .chartLegend(.visible)
         .chartXAxisLabel("koi_model_snr (bins log)")
         .chartYAxisLabel("Conteo")

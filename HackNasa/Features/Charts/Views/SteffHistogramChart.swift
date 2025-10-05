@@ -20,7 +20,6 @@ struct SteffHistogramChart: View {
             )
             .foregroundStyle(by: .value("Disposición", b.disposition))
         }
-        .chartTitle("Distribución de temperatura efectiva por disposición")
         .chartLegend(.visible)
         .chartXAxisLabel("koi_steff (bins)")
         .chartYAxisLabel("Conteo")

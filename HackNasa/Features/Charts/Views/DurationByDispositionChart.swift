@@ -11,9 +11,6 @@ import Charts
 /// 2) Barras por disposición con valor agregado (media/mediana) de duración.
 struct DurationByDispositionChart: View {
     let data: [DurationByDisposition]
-    private var statLabel: String {
-        data.first?.stat.capitalized ?? "Media"
-    }
 
     var body: some View {
         Chart(data) { row in
@@ -26,7 +23,6 @@ struct DurationByDispositionChart: View {
                     .font(.caption2)
             }
         }
-        .chartTitle("Duración \(statLabel) por disposición KOI")
         .chartLegend(.hidden)
         .chartXAxisLabel("koi_disposition")
         .chartYAxisLabel("koi_duration (\(data.first?.stat ?? "media"))")
