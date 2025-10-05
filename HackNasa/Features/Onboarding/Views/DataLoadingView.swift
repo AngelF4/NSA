@@ -388,13 +388,13 @@ struct DataLoadingView: View {
         // guardar para luego mandarlo al backend (UserDefaults a través de @AppStorage)
         // 1) Arma el modelo
         let hp = Hyperparams(numest: n, mxdepth: m, randstate: r)
-        
+
         // 2) Codifica el JSON
         guard let body = APIEndpoint.jsonBody(hp) else { fatalError("JSON inválido") }
-        
+
         // 3) Crea el request (POST + Content-Type ya vienen por defecto)
         guard let req = APIEndpoint.updateHyperparams.request(body: body) else { fatalError("URL inválida") }
-        
+
         // 4) Llama al backend
         do {
             let (_, resp) = try await URLSession.shared.data(for: req)
@@ -405,8 +405,12 @@ struct DataLoadingView: View {
         } catch {
             print("No se completo la petición \(error)")
         }
-        
-        
+
+        storedNumset = Double(n)
+        storedMaxDepth = Double(m)
+        storedRandomState = Double(r)
+
+
         // Simular envío y carga de ~5 segundos
         withAnimation(.easeInOut) {
             phase = .loading
