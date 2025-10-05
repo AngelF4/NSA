@@ -18,10 +18,34 @@ class HomeViewModel: ObservableObject {
     @Published var fileSelected: FilesLoaded.ID? = nil
     @Published var dataset: [GeneralDataset]? = nil
     @Published var isLoading: Bool = false
+    @Published var presicion: ModelPrecision? = nil
     
     init() {
         Task {
             await fetchFiles()
+            await getModelPresicion()
+        }
+    }
+    
+    func getModelPresicion() async {
+        isLoading = true
+        defer { isLoading = false }
+        guard let req = APIEndpoint.modelPrecision.request() else { return }
+        do {
+            let (data, resp) = try await URLSession.shared.data(for: req)
+            guard let http = resp as? HTTPURLResponse, (200..<300).contains(http.statusCode) else {
+                let code = (resp as? HTTPURLResponse)?.statusCode ?? -1
+                print("Respuesta HTTP no válida. Código: \(code)")
+                return
+            }
+            let decoded = try JSONDecoder().decode(ModelPrecision.self, from: data)
+            await MainActor.run {
+                withAnimation {
+                    self.presicion = decoded
+                }
+            }
+        } catch {
+            print("Error de red o decodificación, modelPrecision:", error)
         }
     }
     

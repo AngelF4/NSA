@@ -9,12 +9,44 @@
 import SwiftUI
 
 struct DetailColumn: View {
-    let generalDataset: GeneralDataset
+    var generalDataset: GeneralDataset
     @ObservedObject var geminiVM: GeminiViewModel
     
     var body: some View {
         VStack(spacing: Spacing.m) {
             ScrollView {
+                if geminiVM.isLoadingImage {
+                    ProgressView("Generando imagen...")
+                } else if let image = geminiVM.image {
+                    VStack {
+                        Image(uiImage: image)
+                            .resizable()
+                            .scaledToFit()
+                            .frame(width: 300)
+                            .clipShape(.rect(cornerRadius: Radius.m))
+                            .overlay {
+                                RoundedRectangle(cornerRadius: Radius.m)
+                                    .stroke(.white, lineWidth: 3)
+                            }
+                            .background(
+                                AngularGradient(
+                                    gradient: Gradient(colors: [.red, .orange, .yellow, .green, .cyan, .blue, .purple, .red]),
+                                    center: .center
+                                )
+                                .mask(
+                                    RoundedRectangle(cornerRadius: 12, style: .continuous)
+                                        .stroke(lineWidth: 10)
+                                        .blur(radius: 2)
+                                )
+                                .blur(radius: 7)
+                                // expande hacia afuera para que luzca como shadow
+                            )
+                        Text("Esa es una imagen generada con IA basada en los datos y puede no ser exacta")
+                    }
+                } else {
+                    ContentUnavailableView("Error al mostrar la imagen", systemImage: "cloud.heavyrain.fill")
+                }
+                
                 DatasetContainer(background: .accent) {
                     Text("Disposition")
                         .font(.headline)
@@ -132,6 +164,15 @@ struct DetailColumn: View {
                 )
             }
             .ignoresSafeArea()
+        }
+        .onChange(of: generalDataset.kepoiName) {
+            geminiVM.clearData()
+            Task {
+                await geminiVM.getImage(kepoiname: generalDataset.kepoiName)
+            }
+        }
+        .task {
+            await geminiVM.getImage(kepoiname: generalDataset.kepoiName)
         }
     }
 }

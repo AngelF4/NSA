@@ -16,6 +16,9 @@ enum APIEndpoint {
     case geminiExplainGeneral
     case geminiExplainSpecific(koiname: String)
     case updateHyperparams
+    case generatePlanetImage
+    case exoplanetImage(kepoiname: String)
+    case modelPrecision
     
     private static let scheme = "http"
     private static let host   = "18.188.234.218"
@@ -38,13 +41,22 @@ enum APIEndpoint {
             return "/Gemini/ExplainSpecific/\(koiname)"
         case .updateHyperparams:
             return "/config/hyperparams"
+        case .generatePlanetImage:
+            return "/GeneratePlanetImage"
+        case .exoplanetImage(let kepoiname):
+            let encoded = /*kepoiname.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed) ??*/ kepoiname
+            return "/ExoplanetImage/\(encoded)"
+        case .modelPrecision:
+            return "/model_precision"
         }
     }
     
     private var defaultMethod: String {
         switch self {
-        case .uploadCSV, .updateHyperparams, .selectCSV(_):
+        case .uploadCSV, .updateHyperparams, .selectCSV(_), .generatePlanetImage:
             return "POST"
+        case .exoplanetImage(_), .modelPrecision:
+            return "GET"
         default:
             return "GET"
         }
@@ -59,6 +71,10 @@ enum APIEndpoint {
             ]
         case .updateHyperparams:
             return ["Content-Type": "application/json"]
+        case .generatePlanetImage:
+            return ["Content-Type": "application/json"]
+        case .modelPrecision:
+            return ["Accept": "application/json"]
         default:
             return [:]
         }

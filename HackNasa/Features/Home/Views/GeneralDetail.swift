@@ -68,18 +68,20 @@ struct GeneralDetail: View {
     
     private func charts(_ vm: HomeViewModel) -> [ChartItem] {
         [
-            .init(view: AnyView(SteffVsSradChart(points: vm.datasetPointsSteffSrad()))),
-            .init(view: AnyView(DurationByDispositionChart(data: vm.durationAgg(stat: "media")))),
-            .init(view: AnyView(SteffHistogramChart(bins: vm.steffBins(step: 250)))),
-            .init(view: AnyView(SloggHistogramChart(bins: vm.sloggBins(step: 0.2)))),
-            .init(view: AnyView(ModelSNRHistogramChart(bins: vm.snrLogBins(edges: [0.1,0.3,1,3,10,30,100])))),
-            .init(view: AnyView(DepthHistogramChart(bins: vm.depthLogBins(step: 0.5)))),
-            .init(view: AnyView(PeriodHistogramChart(bins: vm.periodLogBins(step: 0.3)))),
+            .init(view: AnyView(PrecisionProgres(modelPrecision: viewModel.presicion).frame(maxWidth: .infinity))),
+//               .init(view: AnyView(PrecisionBreakdown(modelPrecision: viewModel.presicion))),
+                .init(view: AnyView(SteffVsSradChart(points: vm.datasetPointsSteffSrad()))),
+               .init(view: AnyView(DurationByDispositionChart(data: vm.durationAgg(stat: "media")))),
+               .init(view: AnyView(SteffHistogramChart(bins: vm.steffBins(step: 250)))),
+               .init(view: AnyView(SloggHistogramChart(bins: vm.sloggBins(step: 0.2)))),
+               .init(view: AnyView(ModelSNRHistogramChart(bins: vm.snrLogBins(edges: [0.1,0.3,1,3,10,30,100])))),
+               .init(view: AnyView(DepthHistogramChart(bins: vm.depthLogBins(step: 0.5)))),
+               .init(view: AnyView(PeriodHistogramChart(bins: vm.periodLogBins(step: 0.3)))),
         ]
     }
     
     var body: some View {
-        VStack(alignment: .leading, spacing: Spacing.m) {
+        VStack(alignment: .leading, spacing: Spacing.l) {
             GeometryReader { proxy in
                 let items = charts(viewModel)
                 
@@ -130,7 +132,7 @@ struct GeneralDetail: View {
                             .blur(radius: 2)
                     )
                     .blur(radius: 7)
-                     // expande hacia afuera para que luzca como shadow
+                    // expande hacia afuera para que luzca como shadow
                 )
             }
             .buttonStyle(.plain)
@@ -166,6 +168,9 @@ struct GeneralDetail: View {
             .ignoresSafeArea()
         }
         .onAppear {
+            Task {
+                await viewModel.getModelPresicion()
+            }
             let items = charts(viewModel)
             if let current = position, let idx = items.firstIndex(where: { $0.id == current }) {
                 page = Page.withIndex(idx)

@@ -49,6 +49,7 @@ struct ContentBar: View {
         .refreshable {
             await viewModel.selectCSV()
         }
+        
         .navigationDestination(for: Route.self) { route in
             switch route {
             case .general:
@@ -62,7 +63,7 @@ struct ContentBar: View {
                      // tu vista de detalle
                     DetailColumn(generalDataset: item, geminiVM: geminiVM)
                         .onAppear {
-                            geminiVM.response = nil
+                            geminiVM.clearData()
                         }
                 } else if viewModel.isLoading {
                     ProgressView()
