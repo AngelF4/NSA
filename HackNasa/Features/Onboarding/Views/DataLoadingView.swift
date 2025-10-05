@@ -47,9 +47,9 @@ struct DataLoadingView: View {
     ]
     
     // Formulario (entrada como texto, validación numérica)
-    @State private var numset: String = ""
-    @State private var maxDepth: String = ""
-    @State private var randomState: String = ""
+    @State private var numset: String = "100"
+    @State private var maxDepth: String = "100"
+    @State private var randomState: String = "42"
     
     // Persistencia (para usar más adelante) -> UserDefaults a través de @AppStorage
     @AppStorage("hp_numset") private var storedNumset: Double = 0
@@ -117,7 +117,9 @@ struct DataLoadingView: View {
                         .strokeBorder(Color.white.opacity(0.12))
                 )
             }
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
         }
+        .ignoresSafeArea()
     }
     
     // MARK: - Subviews
@@ -305,19 +307,34 @@ struct DataLoadingView: View {
             .font(.footnote)
             .foregroundStyle(.secondary)
             
-            // Botón de ejecución (navegará a Home en el futuro)
-            Button {
-                isUploading = true
-                Task {
-                    await uploadCSVAndSelect()
-                    isUploading = false
+            HStack {
+                Button {
+                    withAnimation {
+                        onboardingViewModel.showOnboarding = false
+                    }
+                } label: {
+                    VStack {
+                        Text("Omitir por ahora")
+                        Text("Solo si se tiene un archivo cargado")
+                            .font(.footnote)
+                            .foregroundStyle(.secondary)
+                    }
+                    .padding(.horizontal, 16)
                 }
-            } label: {
-                Text(isUploading ? "Subiendo..." : "Ejecutar")
-                    .frame(maxWidth: .infinity)
+                .buttonStyle(.plain)
+                Button {
+                    isUploading = true
+                    Task {
+                        await uploadCSVAndSelect()
+                        isUploading = false
+                    }
+                } label: {
+                    Text(isUploading ? "Subiendo..." : "Ejecutar")
+                        .frame(maxWidth: .infinity)
+                }
+                .buttonStyle(.cta)
+                .padding(.top, 4)
             }
-            .buttonStyle(.cta)
-            .padding(.top, 4)
             
             if let msg = uploadMessage {
                 Text(msg)
@@ -459,6 +476,10 @@ struct DataLoadingView: View {
     }
     
     private func submitHyperparameters() async {
+        withAnimation {
+            phase = .loading
+        }
+        
         guard let n = Int(numset),
               let m = Int(maxDepth),
               let r = Int(randomState) else {
@@ -491,11 +512,8 @@ struct DataLoadingView: View {
         
         
         // Simular envío y carga de ~5 segundos
-        withAnimation(.easeInOut) {
-            phase = .loading
-        }
         Task {
-            try? await Task.sleep(nanoseconds: 4_000_000_000)
+            try? await Task.sleep(nanoseconds: 1_000_000_000)
             await MainActor.run {
                 withAnimation(.easeInOut) {
                     phase = .csvPrompt
