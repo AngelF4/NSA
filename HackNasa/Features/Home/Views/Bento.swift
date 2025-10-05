@@ -44,6 +44,7 @@ struct Bento: View {
             }
 
         }
+        .padding(20)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background {
             GeometryReader { geo in

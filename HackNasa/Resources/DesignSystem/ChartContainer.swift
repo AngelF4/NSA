@@ -17,6 +17,7 @@ struct ChartContainer<Content: View>: View {
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
         .padding(12)
+        .background(Color(.systemBackground), in: .rect(cornerRadius: Radius.m))
         .overlay {
             RoundedRectangle(cornerRadius: Radius.m)
                 .stroke(.fill ,lineWidth: 2)
