@@ -15,10 +15,34 @@ struct DataLoadingView: View {
     // Onboarding (4 pasos)
     @State private var currentStep: Int = 0
     private let steps: [(title: String, body: String)] = [
-        ("Numset", "Define el numero de arboles de decisión que formaran el Random Forest, generalmente, más árboles es mejor, hasta que el rendimiento deja de mejorar significativamente."),
-        ("Max depth", "Este hiperparámetro controla la profundidad máxima que puede alcanzar cada árbol de decisión individual en el bosque. Es una forma de controlar la complejidad del modelo para evitar el overfitting."),
-        ("Random State", "Es una semilla de aleatoridad, es fundamental para la reproducibilidad de tus resultados."),
-        ("Resumen", "Repasa brevemente la información que ingresarás. Asegúrate de que los valores sean coherentes con tus datos para obtener mejores resultados del análisis.")
+        (
+            "Numset",
+            """
+            Define el numero de arboles de decisión que formaran el Random Forest, generalmente, más árboles es mejor, hasta que el rendimiento deja de mejorar significativamente.
+            
+            Un mayor número puede mejorar la estabilidad del modelo y reducir la varianza, pero incrementa el costo de cómputo. Comienza con un valor moderado y ajústalo con validación cruzada para equilibrar precisión y tiempo de entrenamiento.
+            """
+        ),
+        (
+            "Max depth",
+            """
+            Este hiperparámetro controla la profundidad máxima que puede alcanzar cada árbol de decisión individual en el bosque. Es una forma de controlar la complejidad del modelo para evitar el overfitting.
+            
+            Profundidades muy grandes tienden a sobreajustar; profundidades pequeñas pueden subajustar. Puedes dejarlo sin límite y regular con otras técnicas, o fijar un máximo razonable y calibrarlo con validación para encontrar el punto óptimo.
+            """
+        ),
+        (
+            "Random State",
+            """
+            Es una semilla de aleatoridad, es fundamental para la reproducibilidad de tus resultados.
+            
+            Usa el mismo valor durante tus pruebas para poder comparar resultados. Cualquier entero es válido; cambiarlo variará la partición aleatoria y el muestreo, lo que puede afectar ligeramente el desempeño y las métricas.
+            """
+        ),
+        (
+            "Resumen",
+            "Repasa brevemente la información que ingresarás. Asegúrate de que los valores sean coherentes con tus datos para obtener mejores resultados del análisis."
+        )
     ]
     
     // Formulario (entrada como texto, validación numérica)
@@ -41,21 +65,22 @@ struct DataLoadingView: View {
     
     var body: some View {
         GeometryReader { proxy in
-            let modalWidth = proxy.size.width * 0.7
-            let modalHeight = proxy.size.height * 0.7
+            let modalWidth = proxy.size.width * 0.8
+            let modalHeight = proxy.size.height * 0.8
             
             ZStack {
                 // Fondo: misma imagen y overlay oscuro que en el onboarding
                 Image("exoplanets_background")
                     .resizable()
                     .scaledToFill()
+                    .opacity(1)
                     .ignoresSafeArea()
                 
                 Color("secondary")
-                    .opacity(0.35)
+                    .opacity(0.4)
                     .ignoresSafeArea()
                 
-                // Modal centrado (70% pantalla)
+                // Modal centrado (80% pantalla)
                 VStack(spacing: 0) {
                     // Imagen superior (1/3 del modal)
                     Image("exoplanets_background")
@@ -108,7 +133,8 @@ struct DataLoadingView: View {
             
             ScrollView {
                 Text(steps[currentStep].body)
-                    .font(.body)
+                    .font(.title3)
+                    .lineSpacing(4)
                     .foregroundStyle(.primary)
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .padding(.top, 4)
@@ -134,8 +160,8 @@ struct DataLoadingView: View {
                 } label: {
                     Text("Previous")
                         .font(.headline)
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 12)
+                        .frame(maxWidth: .infinity, minHeight: 56)
+                        .padding(.vertical, 0)
                         .foregroundStyle(.black)
                         .background(Color.white)
                         .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
@@ -167,8 +193,8 @@ struct DataLoadingView: View {
             Text("Configura los hiperparámetros")
                 .font(.system(size: 22, weight: .bold))
             
-            Text("Ingresa valores numéricos (se aceptan decimales).")
-                .font(.subheadline)
+            Text("Ingresa valores numéricos (se aceptan decimales). Para comenzar, utiliza valores razonables y evita extremos; podrás ajustarlos más adelante según los resultados. Si no estás seguro, prueba con un rango moderado y compara el desempeño.")
+                .font(.title3)
                 .foregroundStyle(.secondary)
             
             VStack(alignment: .leading, spacing: 12) {
@@ -280,7 +306,7 @@ struct DataLoadingView: View {
     private func labeledNumericField(title: String, text: Binding<String>) -> some View {
         VStack(alignment: .leading, spacing: 6) {
             Text(title)
-                .font(.system(size: 14, weight: .semibold))
+                .font(.system(size: 20, weight: .semibold))
                 .opacity(0.8)
             TextField(title, text: text)
                 .keyboardType(.decimalPad)
