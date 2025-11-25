@@ -380,7 +380,7 @@ struct DataLoadingView: View {
         }
         
         // 1) Subir CSV enviando el binario directo (Content-Type: application/octet-stream)
-        guard let uploadURL = URL(string: "http://18.188.234.218/upload_raw") else {
+        guard let uploadURL = URL(string: "http://18.222.124.63/upload_raw") else {
             await MainActor.run { uploadMessage = "URL de subida inválida." }
             return
         }

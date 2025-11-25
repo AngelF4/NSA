@@ -17,10 +17,29 @@ struct GeneralDetail: View {
     @State private var sortOrder: [KeyPathComparator<DatasetRow>] = [
         .init(\.name, order: .forward)
     ]
+    // Cache de datos derivados para evitar trabajo pesado en cada render
+    @State private var chartItems: [ChartItem] = []
+    @State private var cachedRows: [DatasetRow] = []
     
     private struct ChartItem: Identifiable, Equatable, Hashable {
-        let id = UUID()
+        let id: UUID
         let view: AnyView
+        init(key: String, view: AnyView) {
+            // Stable UUID from key string to avoid recomputation churn
+            if let data = key.data(using: .utf8) {
+                var hasher = Hasher()
+                hasher.combine(data)
+                let hash = hasher.finalize()
+                // Derive UUID bytes deterministically from hash
+                var bytes = withUnsafeBytes(of: hash.bigEndian, Array.init)
+                while bytes.count < 16 { bytes.append(0) }
+                let uuid = UUID(uuid: (bytes[0], bytes[1], bytes[2], bytes[3], bytes[4], bytes[5], bytes[6], bytes[7], bytes[8], bytes[9], bytes[10], bytes[11], bytes[12], bytes[13], bytes[14], bytes[15]))
+                self.id = uuid
+            } else {
+                self.id = UUID()
+            }
+            self.view = view
+        }
         static func == (lhs: ChartItem, rhs: ChartItem) -> Bool { lhs.id == rhs.id }
         func hash(into hasher: inout Hasher) { hasher.combine(id) }
     }
@@ -67,59 +86,71 @@ struct GeneralDetail: View {
     }
     
     private func charts(_ vm: HomeViewModel) -> [ChartItem] {
-        [
-            .init(view: AnyView(PrecisionProgres(modelPrecision: viewModel.presicion).frame(maxWidth: .infinity))),
-//               .init(view: AnyView(PrecisionBreakdown(modelPrecision: viewModel.presicion))),
-                .init(view: AnyView(SteffVsSradChart(points: vm.datasetPointsSteffSrad()))),
-               .init(view: AnyView(DurationByDispositionChart(data: vm.durationAgg(stat: "media")))),
-               .init(view: AnyView(SteffHistogramChart(bins: vm.steffBins(step: 250)))),
-               .init(view: AnyView(SloggHistogramChart(bins: vm.sloggBins(step: 0.2)))),
-               .init(view: AnyView(ModelSNRHistogramChart(bins: vm.snrLogBins(edges: [0.1,0.3,1,3,10,30,100])))),
-               .init(view: AnyView(DepthHistogramChart(bins: vm.depthLogBins(step: 0.5)))),
-               .init(view: AnyView(PeriodHistogramChart(bins: vm.periodLogBins(step: 0.3)))),
-        ]
+        var items: [ChartItem] = []
+        items.append(ChartItem(key: "precision", view: AnyView(PrecisionProgres(modelPrecision: vm.presicion).frame(maxWidth: .infinity))))
+        items.append(ChartItem(key: "steff_srad", view: AnyView(SteffVsSradChart(points: vm.steffVsSradPoints))))
+        items.append(ChartItem(key: "duration_disposition", view: AnyView(DurationByDispositionChart(data: vm.durationAggData))))
+        items.append(ChartItem(key: "steff_hist", view: AnyView(SteffHistogramChart(bins: vm.steffBinsData))))
+        items.append(ChartItem(key: "slogg_hist", view: AnyView(SloggHistogramChart(bins: vm.sloggBinsData))))
+        items.append(ChartItem(key: "snr_hist", view: AnyView(ModelSNRHistogramChart(bins: vm.snrLogBinsData))))
+        items.append(ChartItem(key: "depth_hist", view: AnyView(DepthHistogramChart(bins: vm.depthLogBinsData))))
+        items.append(ChartItem(key: "period_hist", view: AnyView(PeriodHistogramChart(bins: vm.periodLogBinsData))))
+        return items
     }
     
-    var body: some View {
-        VStack(alignment: .leading, spacing: Spacing.l) {
-            GeometryReader { proxy in
-                let items = charts(viewModel)
-                
-                Pager(page: page, data: items, id: \.id) { item in
-                    ChartContainer {
-                        item.view
-                    }
-                    .frame(height: 240)
-                    
+    /// Recalcula filas de tabla y gráficas sólo cuando cambian los datos relevantes
+    private func recomputeDerivedData() {
+        cachedRows = rows()
+        chartItems = charts(viewModel)
+    }
+    
+    /// Sincroniza la página del carrusel con la posición seleccionada
+    private func syncPageWithPosition() {
+        guard !chartItems.isEmpty else { return }
+        if let current = position, let idx = chartItems.firstIndex(where: { $0.id == current }) {
+            page = Page.withIndex(idx)
+        } else {
+            position = chartItems.first?.id
+            page = Page.withIndex(0)
+        }
+    }
+    
+    private struct LoadingSkeleton: View {
+        var body: some View {
+            Group {
+                HStack(spacing: Spacing.l) {
+                    RoundedRectangle(cornerRadius: 24)
+                    RoundedRectangle(cornerRadius: 24)
                 }
-                .preferredItemSize(CGSize(width: proxy.frame(in: .global).width - 80, height: 240))
-                .itemSpacing(Spacing.l)
-                .interactive(scale: 0.92)
-                .horizontal()
-                .padding(.horizontal, 40) // peek
-                .onPageChanged { idx in
-                    if items.indices.contains(idx) { position = items[idx].id }
-                }
+                .frame(height: 400)
+                RoundedRectangle(cornerRadius: 24)
+                    .overlay { ProgressView() }
             }
-            Button {
-                guard geminiVM.response == nil else { return }
-                Task {
-                    await geminiVM.askGeneral()
-                }
-            } label: {
+            .foregroundStyle(.fill)
+        }
+    }
+    
+    private struct GeminiSection: View {
+        @ObservedObject var geminiVM: GeminiViewModel
+        @ObservedObject var viewModel: HomeViewModel
+        var action: () -> Void
+        var body: some View {
+            Button(action: action) {
                 GroupBox {
                     if geminiVM.isLoading {
                         ProgressView()
                     } else if let response = geminiVM.response {
-                        ScrollView {
-                            Text(response)
-                                .multilineTextAlignment(.leading)
-                                .transition(.blurReplace)
-                        }
+                        ScrollView { Text(response).multilineTextAlignment(.leading).transition(.blurReplace) }
                     }
                 } label: {
-                    Label("Preguntale a Gemini", systemImage: "sparkles")
-                        .foregroundStyle(.secondary)
+                    HStack {
+                        Label("Pregúntale a Gemini", systemImage: "sparkles")
+                        Spacer()
+                        if viewModel.isLoadingPrecision && viewModel.presicion == nil {
+                            ProgressView().scaleEffect(0.7)
+                        }
+                    }
+                    .foregroundStyle(.secondary)
                 }
                 .background(
                     AngularGradient(
@@ -132,58 +163,115 @@ struct GeneralDetail: View {
                             .blur(radius: 2)
                     )
                     .blur(radius: 7)
-                    // expande hacia afuera para que luzca como shadow
                 )
             }
             .buttonStyle(.plain)
-            
-            // Tabla de datos para iPad
-            Table(rows().sorted(using: sortOrder), selection: $tableSelection, sortOrder: $sortOrder) {
-                TableColumn("Nombre", value: \.name)
-                TableColumn("Disp.") { r in Text(r.koiDisposition) }
-                TableColumn("T* (K)") { r in number(r.koiSteff, 0) }.width(min: 80, ideal: 100, max: 120)
-                TableColumn("Dur. (d)") { r in number(r.koiDuration, 2) }
-                TableColumn("R* (R☉)") { r in number(r.koiSrad, 2) }
-                TableColumn("log g") { r in number(r.koiSlogg, 2) }
-                TableColumn("SNR") { r in number(r.koiModelSnr, 2) }
-                TableColumn("Depth") { r in number(r.koiDepth, 3) }
-                TableColumn("Per. (d)") { r in number(r.koiPeriod, 3) }
+        }
+    }
+    
+    // Extracted to reduce type-checker load
+    @ViewBuilder
+    private func ChartsPager(width: CGFloat) -> some View {
+        let items = chartItems
+        let itemWidth = max(0, width - 80)
+        let itemSize = CGSize(width: itemWidth, height: 240)
+        Pager(page: page, data: items, id: \.id) { item in
+            ChartContainer {
+                item.view
+            }
+            .frame(height: 240)
+        }
+        .preferredItemSize(itemSize)
+        .itemSpacing(Spacing.l)
+        .interactive(scale: 0.92)
+        .horizontal()
+        .padding(.horizontal, 40)
+        .onPageChanged { idx in
+            if items.indices.contains(idx) { position = items[idx].id }
+        }
+    }
+
+    // Extracted table to separate builder
+    private var datasetTable: some View {
+        Table(cachedRows.sorted(using: sortOrder), selection: $tableSelection, sortOrder: $sortOrder) {
+            TableColumn("Nombre", value: \.name)
+            TableColumn("Disp.") { r in Text(r.koiDisposition) }
+            TableColumn("T* (K)") { r in number(r.koiSteff, 0) }.width(min: 80, ideal: 100, max: 120)
+            TableColumn("Dur. (d)") { r in number(r.koiDuration, 2) }
+            TableColumn("R* (R☉)") { r in number(r.koiSrad, 2) }
+            TableColumn("log g") { r in number(r.koiSlogg, 2) }
+            TableColumn("SNR") { r in number(r.koiModelSnr, 2) }
+            TableColumn("Depth") { r in number(r.koiDepth, 3) }
+            TableColumn("Per. (d)") { r in number(r.koiPeriod, 3) }
+        }
+    }
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: Spacing.l) {
+            // Carga inicial del dataset: mostramos skeleton de charts + tabla
+            if viewModel.isLoadingDataset && (viewModel.dataset == nil || viewModel.dataset?.isEmpty == true) {
+                LoadingSkeleton()
+            } else {
+                // Contenido principal cuando ya hay dataset
+                GeometryReader { proxy in
+                    let width = proxy.size.width
+                    ChartsPager(width: width)
+                }
+                
+                // Indicador pequeño si se está actualizando el dataset pero ya había datos
+                if viewModel.isLoadingDataset && (viewModel.dataset?.isEmpty == false) {
+                    HStack(spacing: 8) {
+                        ProgressView()
+                            .scaleEffect(0.7)
+                        Text("Actualizando dataset…")
+                            .font(.footnote)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+                
+                GeminiSection(geminiVM: geminiVM, viewModel: viewModel) {
+                    guard geminiVM.response == nil else { return }
+                    Task { await geminiVM.askGeneral() }
+                }
+                
+                // Tabla de datos para iPad
+                datasetTable
             }
         }
         .padding(20)
         .navigationTitle("Graficas Generales")
-        .background {
+        .background(
             GeometryReader { geo in
-                let end = min(geo.size.width, geo.size.height) / 2
+                let end: CGFloat = min(geo.size.width, geo.size.height) / 2
                 RadialGradient(
                     stops: [
-                        .init(color: Color("secondaryColor"), location: 0.0), // 0% en el centro
-                        .init(color: .clear,  location: 1.0)  // 100% hacia afuera
+                        .init(color: Color("secondaryColor"), location: 0.0),
+                        .init(color: .clear, location: 1.0)
                     ],
                     center: .center,
                     startRadius: 0,
                     endRadius: end
                 )
+                .ignoresSafeArea()
             }
-            .ignoresSafeArea()
-        }
+        )
+        // Usamos onAppear y onChange para recalcular datos derivados sólo cuando cambian
         .onAppear {
-            Task {
-                await viewModel.getModelPresicion()
-            }
-            let items = charts(viewModel)
-            if let current = position, let idx = items.firstIndex(where: { $0.id == current }) {
-                page = Page.withIndex(idx)
-            } else {
-                position = items.first?.id
-                page = Page.withIndex(0)
-            }
+            recomputeDerivedData()
+            syncPageWithPosition()
+        }
+        .onChange(of: viewModel.dataset?.count) { _, _ in
+            recomputeDerivedData()
+            syncPageWithPosition()
+        }
+        .onChange(of: viewModel.presicion) { _, _ in
+            recomputeDerivedData()
+            syncPageWithPosition()
         }
         .onChange(of: position) { _, newValue in
-            let items = charts(viewModel)
-            if let id = newValue, let idx = items.firstIndex(where: { $0.id == id }) {
-                page.update(.new(index: idx))
-            }
+            guard let id = newValue else { return }
+            let idx = chartItems.firstIndex(where: { $0.id == id })
+            if let idx { page.update(.new(index: idx)) }
         }
     }
 }

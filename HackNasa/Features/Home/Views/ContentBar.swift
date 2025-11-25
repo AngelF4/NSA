@@ -49,7 +49,6 @@ struct ContentBar: View {
         .refreshable {
             await viewModel.selectCSV()
         }
-        
         .navigationDestination(for: Route.self) { route in
             switch route {
             case .general:

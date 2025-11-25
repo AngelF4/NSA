@@ -8,7 +8,7 @@
 
 import Foundation
 
-struct ModelPrecision: Decodable {
+struct ModelPrecision: Decodable, Equatable {
     let accuracy: Double
     let aggregates: [String: Double]
     let perClass: [String: ClassStats]
@@ -19,7 +19,7 @@ struct ModelPrecision: Decodable {
         case perClass = "per_class"
     }
 
-    struct ClassStats: Decodable {
+    struct ClassStats: Decodable, Equatable {
         let f1Score: Double
         let precision: Double
         let recall: Double

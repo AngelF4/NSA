@@ -16,20 +16,52 @@ struct filesCSV: Decodable {
 class HomeViewModel: ObservableObject {
     @Published var files: [FilesLoaded] = []
     @Published var fileSelected: FilesLoaded.ID? = nil
-    @Published var dataset: [GeneralDataset]? = nil
+    @Published var dataset: [GeneralDataset]? = nil {
+        didSet {
+            recomputeCharts()
+        }
+    }
+    @Published var isLoadingFiles: Bool = false
+    @Published var isLoadingDataset: Bool = false
+    @Published var isLoadingPrecision: Bool = false
+    /// Estado de carga agregado para compatibilidad con vistas existentes
     @Published var isLoading: Bool = false
     @Published var presicion: ModelPrecision? = nil
     
+    // Resultados precalculados de gráficas para no hacer trabajo pesado en el body de las vistas
+    @Published var steffVsSradPoints: [SteffVsSradPoint] = []
+    @Published var durationAggData: [DurationByDisposition] = []
+    @Published var steffBinsData: [SteffBin] = []
+    @Published var sloggBinsData: [SloggBin] = []
+    @Published var snrLogBinsData: [ModelSNRBin] = []
+    @Published var depthLogBinsData: [DepthLogBin] = []
+    @Published var periodLogBinsData: [PeriodLogBin] = []
+    
+#if DEBUG
+    // No need to recomputeCharts on init in debug: dataset is set directly and triggers didSet
+#endif
     init() {
+#if DEBUG
+        // Datos falsos para debug
+        self.files = FilesLoaded.mockList
+        self.fileSelected = self.files.first?.id
+        self.dataset = GeneralDataset.mockList
+        self.presicion = .mock
+#else
         Task {
             await fetchFiles()
             await getModelPresicion()
         }
+#endif
     }
     
     func getModelPresicion() async {
-        isLoading = true
-        defer { isLoading = false }
+        isLoadingPrecision = true
+        updateLoadingState()
+        defer {
+            isLoadingPrecision = false
+            updateLoadingState()
+        }
         guard let req = APIEndpoint.modelPrecision.request() else { return }
         do {
             let (data, resp) = try await URLSession.shared.data(for: req)
@@ -50,7 +82,6 @@ class HomeViewModel: ObservableObject {
     }
     
     func selectCSV() async {
-        isLoading = true
         guard let fileSelectedID = fileSelected,
               let fileSelected = files.first(where: { $0.id == fileSelectedID }) else { return }
         
@@ -76,11 +107,13 @@ class HomeViewModel: ObservableObject {
     }
     
     func fetchDataset() async {
-        isLoading = true
+        isLoadingDataset = true
+        updateLoadingState()
         cleanData()
         guard let url = APIEndpoint.generalData.url() else {
             print("URL inválida")
-            isLoading = false
+            isLoadingDataset = false
+            updateLoadingState()
             return
         }
         do {
@@ -108,11 +141,18 @@ class HomeViewModel: ObservableObject {
         } catch {
             print("Error de red o decodificación:, fetchDataset", error)
         }
-        isLoading = false
+        isLoadingDataset = false
+        updateLoadingState()
     }
     
     func fetchFiles() async {
-        guard let req = APIEndpoint.listCSVs.request() else { return }
+        isLoadingFiles = true
+        updateLoadingState()
+        guard let req = APIEndpoint.listCSVs.request() else {
+            isLoadingFiles = false
+            updateLoadingState()
+            return
+        }
         do {
             let (data, resp) = try await URLSession.shared.data(for: req)
             guard let http = resp as? HTTPURLResponse, (200..<300).contains(http.statusCode) else {
@@ -124,6 +164,8 @@ class HomeViewModel: ObservableObject {
             print("Error de red o decodificación:, fetchFiles", error)
         }
         
+        isLoadingFiles = false
+        updateLoadingState()
         automaticSelection()
     }
     private func automaticSelection() {
@@ -139,6 +181,10 @@ class HomeViewModel: ObservableObject {
     /// 1) Dispersión Teff vs Srad
     func datasetPointsSteffSrad() -> [SteffVsSradPoint] {
         let items = dataset ?? []
+        return datasetPointsSteffSrad(from: items)
+    }
+    
+    private func datasetPointsSteffSrad(from items: [GeneralDataset]) -> [SteffVsSradPoint] {
         return items.compactMap { d in
             guard let steff = d.koiSteff, steff.isFinite,
                   let srad  = d.koiSrad,  srad.isFinite else { return nil }
@@ -150,6 +196,10 @@ class HomeViewModel: ObservableObject {
     /// 2) Barras por disposición: media o mediana de duración
     func durationAgg(stat: String = "media") -> [DurationByDisposition] {
         let items = dataset ?? []
+        return durationAgg(from: items, stat: stat)
+    }
+    
+    private func durationAgg(from items: [GeneralDataset], stat: String = "media") -> [DurationByDisposition] {
         let grouped = Dictionary(grouping: items.compactMap { d -> (String, Double)? in
             guard let v = d.koiDuration, v.isFinite else { return nil }
             let disp = (d.koiDisposition as String?)?.trimmingCharacters(in: .whitespacesAndNewlines) ?? "N/A"
@@ -205,6 +255,10 @@ class HomeViewModel: ObservableObject {
     /// 3) Histograma Teff por disposición. step en Kelvin.
     func steffBins(step: Double = 250) -> [SteffBin] {
         let items = dataset ?? []
+        return steffBins(from: items, step: step)
+    }
+    
+    private func steffBins(from items: [GeneralDataset], step: Double = 250) -> [SteffBin] {
         let rows = items.compactMap { d -> (String, Int)? in
             guard let v = d.koiSteff, v.isFinite else { return nil }
             let idx = linearBinIndex(value: v, step: step)
@@ -225,6 +279,10 @@ class HomeViewModel: ObservableObject {
     /// 4) Histograma log g por disposición. step típico 0.2
     func sloggBins(step: Double = 0.2) -> [SloggBin] {
         let items = dataset ?? []
+        return sloggBins(from: items, step: step)
+    }
+    
+    private func sloggBins(from items: [GeneralDataset], step: Double = 0.2) -> [SloggBin] {
         let rows = items.compactMap { d -> (String, Int)? in
             guard let v = d.koiSlogg, v.isFinite else { return nil }
             let idx = linearBinIndex(value: v, step: step)
@@ -245,6 +303,10 @@ class HomeViewModel: ObservableObject {
     /// 5) Histograma SNR con bins log a partir de bordes (edges)
     func snrLogBins(edges: [Double] = [0.1, 0.3, 1, 3, 10, 30, 100]) -> [ModelSNRBin] {
         let items = dataset ?? []
+        return snrLogBins(from: items, edges: edges)
+    }
+    
+    private func snrLogBins(from items: [GeneralDataset], edges: [Double] = [0.1, 0.3, 1, 3, 10, 30, 100]) -> [ModelSNRBin] {
         let rows = items.compactMap { d -> (String, Int)? in
             guard let raw = d.koiModelSnr, raw.isFinite, raw > 0 else { return nil }
             guard let idx = edgeBinIndex(value: raw, edges: edges) else { return nil }
@@ -265,6 +327,10 @@ class HomeViewModel: ObservableObject {
     /// 6) Histograma de profundidad con bins en log10. step en unidades de log10
     func depthLogBins(step: Double = 0.5) -> [DepthLogBin] {
         let items = dataset ?? []
+        return depthLogBins(from: items, step: step)
+    }
+    
+    private func depthLogBins(from items: [GeneralDataset], step: Double = 0.5) -> [DepthLogBin] {
         let rows = items.compactMap { d -> (String, Int)? in
             guard let raw = d.koiDepth, raw.isFinite, raw > 0 else { return nil }
             let v = log10(raw)
@@ -286,6 +352,10 @@ class HomeViewModel: ObservableObject {
     /// 7) Histograma de periodo con bins en log10. step en unidades de log10
     func periodLogBins(step: Double = 0.3) -> [PeriodLogBin] {
         let items = dataset ?? []
+        return periodLogBins(from: items, step: step)
+    }
+    
+    private func periodLogBins(from items: [GeneralDataset], step: Double = 0.3) -> [PeriodLogBin] {
         let rows = items.compactMap { d -> (String, Int)? in
             guard let raw = d.koiPeriod, raw.isFinite, raw > 0 else { return nil }
             let v = log10(raw)
@@ -303,4 +373,190 @@ class HomeViewModel: ObservableObject {
         }
         .sorted { ($0.binLabel, $0.disposition) < ($1.binLabel, $1.disposition) }
     }
+    
+    // MARK: - Loading state and chart recomputation
+    
+    // Actualiza el flag global de carga a partir de los flags específicos
+    private func updateLoadingState() {
+        isLoading = isLoadingFiles || isLoadingDataset || isLoadingPrecision
+    }
+    
+    /// Recalcula en background los datos agregados para gráficas cuando cambia el dataset
+    private func recomputeCharts() {
+        let items = dataset ?? []
+        
+        Task(priority: .background) { [weak self, items] in
+            guard let self else { return }
+            
+            // Usa las funciones puras basadas en `items` para calcular en background
+            let steffPoints = self.datasetPointsSteffSrad(from: items)
+            let duration    = self.durationAgg(from: items, stat: "media")
+            let steff       = self.steffBins(from: items, step: 250)
+            let slogg       = self.sloggBins(from: items, step: 0.2)
+            let snr         = self.snrLogBins(from: items, edges: [0.1, 0.3, 1, 3, 10, 30, 100])
+            let depth       = self.depthLogBins(from: items, step: 0.5)
+            let period      = self.periodLogBins(from: items, step: 0.3)
+            
+            await MainActor.run {
+                self.steffVsSradPoints = steffPoints
+                self.durationAggData   = duration
+                self.steffBinsData     = steff
+                self.sloggBinsData     = slogg
+                self.snrLogBinsData    = snr
+                self.depthLogBinsData  = depth
+                self.periodLogBinsData = period
+            }
+        }
+    }
 }
+
+#if DEBUG
+// MARK: - Inits de conveniencia para mocks
+extension GeneralDataset {
+    init(
+        id: String,
+        keplerName: String?,
+        kepoiName: String,
+        name: String,
+        koiSteff: Double?,
+        koiDisposition: String,
+        koiDuration: Double?,
+        koiSrad: Double?,
+        koiSlogg: Double?,
+        koiModelSnr: Double?,
+        koiDepth: Double?,
+        koiPeriod: Double?
+    ) {
+        self.id = id
+        self.keplerName = keplerName
+        self.kepoiName = kepoiName
+        self.name = name
+        self.koiSteff = koiSteff
+        self.koiDisposition = koiDisposition
+        self.koiDuration = koiDuration
+        self.koiSrad = koiSrad
+        self.koiSlogg = koiSlogg
+        self.koiModelSnr = koiModelSnr
+        self.koiDepth = koiDepth
+        self.koiPeriod = koiPeriod
+    }
+}
+
+extension FilesLoaded {
+    static let mockList: [FilesLoaded] = [
+        .init(name: "kepler_sample.csv"),
+        .init(name: "koi_subset.csv"),
+        .init(name: "training_set_v1.csv")
+    ]
+}
+
+extension ModelPrecision {
+    static let mock: ModelPrecision = {
+        let confirmed = ClassStats(f1Score: 0.9871, precision: 1.0, recall: 0.9745, support: 549)
+        let candidate = ClassStats(f1Score: 0.9812, precision: 0.9750, recall: 0.9875, support: 430)
+        let falsePos  = ClassStats(f1Score: 0.9930, precision: 0.9900, recall: 0.9960, support: 510)
+        let macro     = ClassStats(f1Score: 0.9871, precision: 0.9883, recall: 0.9860, support: 1489)
+        let weighted  = ClassStats(f1Score: 0.9900, precision: 0.9910, recall: 0.9908, support: 1489)
+        return ModelPrecision(
+            accuracy: 0.9908,
+            aggregates: ["accuracy": 0.9908],
+            perClass: [
+                "CONFIRMED": confirmed,
+                "CANDIDATE": candidate,
+                "FALSE POSITIVE": falsePos,
+                "macro avg": macro,
+                "weighted avg": weighted
+            ]
+        )
+    }()
+}
+
+extension GeneralDataset {
+    static let mockList: [GeneralDataset] = [
+        .init(
+            id: "1234567",
+            keplerName: "Kepler-22 b",
+            kepoiName: "K02200.01",
+            name: "Kepler-22 b",
+            koiSteff: 5600,
+            koiDisposition: "CONFIRMED",
+            koiDuration: 7.5,
+            koiSrad: 0.98,
+            koiSlogg: 4.35,
+            koiModelSnr: 18.2,
+            koiDepth: 0.00012,
+            koiPeriod: 289.9
+        ),
+        .init(
+            id: "7654321",
+            keplerName: nil,
+            kepoiName: "K04450.02",
+            name: "K04450.02",
+            koiSteff: 6100,
+            koiDisposition: "CANDIDATE",
+            koiDuration: 3.2,
+            koiSrad: 1.15,
+            koiSlogg: 4.20,
+            koiModelSnr: 9.7,
+            koiDepth: 0.00045,
+            koiPeriod: 12.6
+        ),
+        .init(
+            id: "2468101",
+            keplerName: "Kepler-452 b",
+            kepoiName: "K09000.01",
+            name: "Kepler-452 b",
+            koiSteff: 5750,
+            koiDisposition: "CONFIRMED",
+            koiDuration: 10.5,
+            koiSrad: 1.00,
+            koiSlogg: 4.40,
+            koiModelSnr: 35.0,
+            koiDepth: 0.00008,
+            koiPeriod: 384.8
+        ),
+        .init(
+            id: "1122334",
+            keplerName: nil,
+            kepoiName: "K01234.01",
+            name: "K01234.01",
+            koiSteff: 4900,
+            koiDisposition: "FALSE POSITIVE",
+            koiDuration: 2.1,
+            koiSrad: 0.75,
+            koiSlogg: 4.60,
+            koiModelSnr: 2.8,
+            koiDepth: 0.0035,
+            koiPeriod: 3.9
+        ),
+        .init(
+            id: "9988776",
+            keplerName: nil,
+            kepoiName: "K05555.03",
+            name: "K05555.03",
+            koiSteff: 5200,
+            koiDisposition: "CANDIDATE",
+            koiDuration: 5.0,
+            koiSrad: 0.90,
+            koiSlogg: 4.50,
+            koiModelSnr: 14.0,
+            koiDepth: 0.0009,
+            koiPeriod: 27.2
+        ),
+        .init(
+            id: "3344556",
+            keplerName: nil,
+            kepoiName: "K07777.01",
+            name: "K07777.01",
+            koiSteff: 6300,
+            koiDisposition: "FALSE POSITIVE",
+            koiDuration: 1.7,
+            koiSrad: 1.30,
+            koiSlogg: 4.15,
+            koiModelSnr: 1.1,
+            koiDepth: 0.0060,
+            koiPeriod: 1.8
+        )
+    ]
+}
+#endif
