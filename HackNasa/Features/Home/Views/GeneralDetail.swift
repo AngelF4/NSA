@@ -255,7 +255,6 @@ struct GeneralDetail: View {
                 .ignoresSafeArea()
             }
         )
-        // Usamos onAppear y onChange para recalcular datos derivados sólo cuando cambian
         .onAppear {
             recomputeDerivedData()
             syncPageWithPosition()

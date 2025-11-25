@@ -58,16 +58,6 @@
 			path = HackNasa;
 			sourceTree = "<group>";
 		};
-		84C514452E94AA0F00BE85D4 /* General */ = {
-			isa = PBXFileSystemSynchronizedRootGroup;
-			path = General;
-			sourceTree = "<group>";
-		};
-		84C514BC2E94AC7F00BE85D4 /* Widgets */ = {
-			isa = PBXFileSystemSynchronizedRootGroup;
-			path = Widgets;
-			sourceTree = "<group>";
-		};
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -86,8 +76,6 @@
 			isa = PBXGroup;
 			children = (
 				8419630C2E91997A00AFDD2D /* HackNasa */,
-				84C514452E94AA0F00BE85D4 /* General */,
-				84C514BC2E94AC7F00BE85D4 /* Widgets */,
 				84C514B72E94AC7E00BE85D4 /* Frameworks */,
 				8419630B2E91997A00AFDD2D /* Products */,
 			);
