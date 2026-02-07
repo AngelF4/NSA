@@ -299,7 +299,7 @@ private struct SidebarUploadSheet: View {
             return
         }
 
-        guard let uploadURL = URL(string: "http://18.188.234.218/upload_raw") else {
+        guard let uploadURL = URL(string: "http://18.222.124.63/upload_raw") else {
             await MainActor.run {
                 uploadMessage = "URL de subida inválida."
                 isUploading = false

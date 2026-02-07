@@ -21,7 +21,7 @@ enum APIEndpoint {
     case modelPrecision
     
     private static let scheme = "http"
-    private static let host   = "18.188.234.218"
+    private static let host   = "18.222.124.63"
     
     private var path: String {
         switch self {
